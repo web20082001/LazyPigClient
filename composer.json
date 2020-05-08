@@ -8,7 +8,7 @@
             "email": "57480441@qq.com"
         }
     ],
-    "version": "0.0.1",
+    "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
             "LazyPigClient\\": "src/"
