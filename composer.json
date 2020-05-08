@@ -1,0 +1,19 @@
+{
+    "name": "xiaoniao/lazy-pig-client",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "xiaoniaoahuan",
+            "email": "57480441@qq.com"
+        }
+    ],
+
+    "autoload": {
+        "psr-4": {
+            "LazyPigClient\\": "src/"
+        }
+    },
+
+    "require": {}
+}
