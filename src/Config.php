@@ -1,20 +1,50 @@
 <?php
+
+namespace LazyPigClient;
+
 /**
- * 配置文件
+ * 配置类
  */
+class Config
+{
+    private static $config = null;
 
-
-return [
-
+    private static function loadConfig()
+    {
+        self::$config = require_once('Conf.php');
+    }
 
     /**
-     * 应用ID
+     * 获取配置
+     * @param $key
+     * @param null $default
+     * @return mixed|null
      */
-    'app_id' => '',
+    static function get($key, $default=null)
+    {
+        if(is_null(self::$config)){
+            self::loadConfig();
+        }
 
-    /**
-     * 应用密钥
-     */
-    'app_secret' => '',
+        if(is_null($key)){
+            return self::$config;
+        }
 
-];
+        return Helper::arrayGet(self::$config, $key, $default);
+    }
+
+    static function getAll()
+    {
+        return self::get(null);
+    }
+
+    static function getAppId()
+    {
+        return self::get('app_id');
+    }
+
+    static function getAppSecret()
+    {
+        return self::get('app_secret');
+    }
+}

@@ -15,5 +15,7 @@
         }
     },
 
-    "require": {}
+    "require": {
+        "rmccue/requests": "^1.7"
+    }
 }

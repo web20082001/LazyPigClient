@@ -3,13 +3,12 @@
 namespace LazyPigClient;
 
 
-
 /**
  * 签名类
  *
  * 功能:1 生成签名, 2 验证签名
  */
-class Signature
+class Signature extends Base
 {
 
     /**
@@ -17,34 +16,36 @@ class Signature
      */
     const TIME_OFFSET_LIMIT = 60;
 
-    private $app_id = null;
-    private $app_secret = null;
+    /**
+     * 是否验证时间差
+     */
+    const VERIFY_TIME = false;
+
     private $sign = null;
     private $data = null;
     private $message = '';
 
-    function __construct(array $config=[])
-    {
-        if(empty($config)){
-            //加载默认配置文件
-            $config = require 'Config.php';
-        }
-
-        //加载配置
-        $this->loadConfig($config);
-    }
+    /**
+     * 生成签名的参数
+     * @var array
+     */
+    private $sign_data = [];
 
     /**
-     * 加载配置
-     * @param $config
+     * 用于生成签名的字符串
+     * @var array
      */
-    private function loadConfig($config)
+    private $sign_str = '';
+
+    /**
+     * 生成的签名的字符串
+     * @var array
+     */
+    private $make_sign_str = '';
+
+    function __construct()
     {
-
-            //初始化参数
-        $this->app_id = Helper::arrayGet($config, 'app_id');
-
-        $this->app_secret = Helper::arrayGet($config, 'app_secret');
+        parent::__construct();
     }
 
     /**
@@ -67,12 +68,12 @@ class Signature
             $verify_success = ($this->sign == $this->makeSign());
 
             if (!$verify_success) {
-                $this->message = '签名验证未通过';
+                $this->message = '签名验证未通过,签名不相等';
             }
 
             return $verify_success;
 
-        }else{
+        } else {
             //参数检查未通过
             return false;
         }
@@ -88,11 +89,19 @@ class Signature
         //若没有时间戳则加
         $timestamp = Helper::arrayGet($data, 'timestamp');
 
-        if(!$timestamp){
+        if (!$timestamp) {
             $data['timestamp'] = time();
         }
 
-        return sha1(self::signDataFormat($data) . '&' . $this->app_secret);
+        //用于生成签名的参数
+        $this->sign_data = $data;
+
+        //用于生成签名的字符串
+        $this->sign_str = self::signDataFormat($data) . '&' . $this->app_secret;
+
+        $this->make_sign_str = sha1($this->sign_str);
+
+        return $this->make_sign_str;
     }
 
     /**
@@ -119,18 +128,22 @@ class Signature
             }
 
             //排除签名参数,不参与生成签名
-            if($key == 'sign'){
+            if ($key == 'sign') {
                 $this->sign = $value;
                 unset($this->data['sign']);
-            }else if($key == 'timestamp'){
+            } else if ($key == 'timestamp') {
 
-                //时间戳偏移量
-                $time_offset =  abs(intval($value) - time());
+                //验证时间差
+                if (self::VERIFY_TIME) {
+                    //时间戳偏移量
+                    $time_offset = abs(intval($value) - time());
 
-                if($time_offset >= self::TIME_OFFSET_LIMIT){
-                    $this->message = sprintf('参数 %s 的值 %s 与服务器相差超过 %d 秒', $key, $value, self::TIME_OFFSET_LIMIT);
-                    return false;
+                    if ($time_offset >= self::TIME_OFFSET_LIMIT) {
+                        $this->message = sprintf('参数 %s 的值 %s 时间戳时差超过 %d 秒', $key, $value, self::TIME_OFFSET_LIMIT);
+                        return false;
+                    }
                 }
+
             }
         }
 
@@ -166,6 +179,15 @@ class Signature
         $signString = '';
 
         foreach ($data as $key => $val) {
+
+            //类型转换
+            if(is_bool($val)){
+                $val = intval($val);
+            }else if(is_array($val)){
+                //数组转json字符串
+                $val = json_encode($val);
+            }
+
             $signString .= $key . '=' . $val . '&';
         }
 
@@ -181,4 +203,29 @@ class Signature
         return $this->message;
     }
 
+    /**
+     * 获取用于生成签名的参数
+     * @return string
+     */
+    public function getSignData()
+    {
+        return $this->sign_data;
+    }
+
+    /**
+     * 获取用于生成签名的字符串
+     * @return string
+     */
+    public function getSignStr()
+    {
+        return $this->sign_str;
+    }
+    /**
+     * 获取生成的签名字符串
+     * @return string
+     */
+    public function getMakeSignStr()
+    {
+        return $this->make_sign_str;
+    }
 }
